@@ -1,0 +1,32 @@
+---
+title: "tester"
+author: "Victoria Schaller"
+date: "2025-03-20"
+output: html_document
+---
+
+Imports
+```{r}
+library(dplyr)
+```
+
+Import Data
+```{r}
+setwd("C:/Users/toris/Downloads/Spring 25/DS4420/HW/5")
+
+```
+
+Join Data
+```{r}
+
+```
+
+Get User Input and Filter
+```{r}
+
+```
+
+Filter Data and Create Ranking Matrix
+```{r}
+
+```
