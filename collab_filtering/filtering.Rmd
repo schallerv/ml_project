@@ -5,28 +5,49 @@ date: "2025-03-20"
 output: html_document
 ---
 
-Imports
 ```{r}
+# Load necessary libraries
 library(dplyr)
+library(tidyr)
+library(readr)
+
+# Read CSV files
+subcategories <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/subcategories.csv", show_col_types = FALSE)
+games <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/games.csv", show_col_types = FALSE)
+ratings <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/user_ratings.csv", show_col_types = FALSE)
 ```
 
-Import Data
-```{r}
-setwd("C:/Users/toris/Downloads/Spring 25/DS4420/HW/5")
-
+``` {r}
+df_subset <- games %>% select(1, 2, 41:48)
+print(head(df_subset, 1))
 ```
 
-Join Data
-```{r}
+``` {r}
+# Rename columns where index is between 40-48
+colnames(games)[41:48] <- gsub("Cat:", "", colnames(games)[41:48])
 
+# Filter columns
+games <- games %>% select(1, 2, 41:48)
+
+# Merge datasets
+full_games <- inner_join(games, subcategories, by = "BGGId")
 ```
 
-Get User Input and Filter
-```{r}
+``` {r}
+# Generate categories list and count categories per game
+full_games <- full_games %>% 
+  mutate(Categories = apply(select(., 3:10), 1, function(row) paste(names(.)[3:10][row == 1], collapse = ", ")),
+         Num_Categories = rowSums(select(., 3:10)))
 
+# Generate subcategories list and count subcategories per game
+full_games <- full_games %>% 
+  mutate(Sub_Categories = apply(select(., 11:20), 1, function(row) paste(names(.)[11:20][row == 1], collapse = ", ")),
+         Num_Sub_Categories = rowSums(select(., 11:20)))
+
+# Filter out rows where Num_Categories is 0
+full_games <- filter(full_games, Num_Categories > 0)
 ```
 
-Filter Data and Create Ranking Matrix
-```{r}
-
+``` {r}
+head(full_games, 1)
 ```
