@@ -1,0 +1,229 @@
+# DS4420 Final Project
+# Victoria Schaller
+
+# import libraries
+library(dplyr)
+library(tidyr)
+library(readr)
+library(tibble)
+library(Matrix) 
+
+# read in data
+subcategories <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/subcategories.csv", show_col_types = FALSE)
+games <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/games.csv", show_col_types = FALSE)
+ratings <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/user_ratings.csv", show_col_types = FALSE)
+
+################# User interaction steps ################# 
+# remove all games with average rating below 4
+games <- games %>%
+  filter(AvgRating >= quantile(AvgRating, 0.30))
+
+print("RATING FILTER")
+print(nrow(games))
+
+# filter number of players
+repeat {
+  user_input <- readline("Enter the number of players: ")
+  num_players <- as.numeric(user_input)
+  
+  # Check if the input is a valid single number
+  if (!is.na(num_players) && length(num_players) == 1) {
+    break  # Exit the loop if the input is valid
+  } else {
+    cat("Invalid input. Please enter exactly one number.\n")
+  }
+}
+
+cat("You entered:", num_players, "\n")
+games <- filter(games, MaxPlayers >= num_players)
+games <- filter(games, MinPlayers <= num_players)
+
+print("PLAYERS FILTER")
+print(nrow(games))
+
+# rename category columns
+colnames(games)[41:48] <- gsub("Cat:", "", colnames(games)[41:48])
+
+# filter columns to id, name, and category data
+games <- games %>% select(1, 2, 6, 41:48)
+
+# join games and subcategory data
+full_games <- inner_join(games, subcategories, by = "BGGId")
+
+print("JOIN DATA")
+print(nrow(full_games))
+
+# categories list and count categories per game
+full_games <- full_games %>% 
+  mutate(Categories = apply(select(., 4:11), 1, function(row) paste(names(.)[4:11][row == 1], collapse = ", ")),
+         Num_Categories = rowSums(select(., 4:11)))
+
+# subcategories list and count subcategories per game
+full_games <- full_games %>% 
+  mutate(Sub_Categories = apply(select(., 12:21), 1, function(row) paste(names(.)[12:21][row == 1], collapse = ", ")),
+         Num_Sub_Categories = rowSums(select(., 12:21)))
+
+# filter games that are not in any category
+full_games <- filter(full_games, Num_Categories > 0)
+
+print("CAT QUANT FILTER")
+print(nrow(full_games))
+
+# extract unique categories and print
+unique_categories <- sort(unique(unlist(strsplit(na.omit(full_games$Categories), ", "))))
+cat("Categories:\n")
+cat(paste0(seq_along(unique_categories), ". ", unique_categories), sep = "\n")
+
+# allow user to select categories of interest
+repeat {
+  user_input <- readline("Select categories of interest by number(s) separated by a space: ")
+  selected_categories <- as.integer(strsplit(user_input, " ")[[1]])
+  
+  # Remove NA values (which occur if the input isn't a number) and check if there's at least one valid number
+  selected_categories <- selected_categories[!is.na(selected_categories)]
+  valid_categories <- selected_categories[selected_categories %in% seq_along(unique_categories)]
+  
+  if (length(valid_categories) > 0) {
+    break  # Exit the loop if at least one number is entered
+  } else {
+    cat("Invalid input. Please enter at least one number.\n")
+  }
+}
+category_names <- unique_categories[valid_categories]
+print("You Have Selected:")
+print(category_names)
+filtered_games <- full_games %>% filter(if_any(all_of(category_names), ~ . == 1))
+
+print("CAT CHOICE FILTER")
+print(nrow(filtered_games))
+
+# allow user to select subcategories of interest
+y_n <- readline("Would you like to select a subcategory? (Y/N) ")
+if (tolower(y_n) == "y") {
+  unique_sub_categories <- sort(unique(unlist(strsplit(na.omit(filtered_games$Sub_Categories), ", "))))
+  cat("Subcategories:\n")
+  cat(paste0(seq_along(unique_sub_categories), ". ", unique_sub_categories), sep = "\n")
+  repeat {
+    user_input <- readline("Select subcategories of interest by number(s) separated by a space: ")
+    selected_subcategories <- as.integer(strsplit(user_input, " ")[[1]])
+    
+    # Remove NA values (which occur if the input isn't a number) and check if there's at least one valid number
+    selected_subcategories <- selected_subcategories[!is.na(selected_subcategories)]
+    print(selected_subcategories)
+    valid_subcategories <- selected_subcategories[selected_subcategories %in% seq_along(unique_sub_categories)]
+    print(valid_subcategories)
+    
+    if (length(valid_subcategories) > 0) {
+      break  # Exit the loop if at least one number is entered
+    } else {
+      cat("Invalid input. Please enter at least one number.\n")
+    }
+  }
+  sub_category_names <- unique_sub_categories[valid_subcategories]
+  print("You Have Selected:")
+  print(sub_category_names)
+  filtered_games <- filtered_games %>% filter(if_any(all_of(sub_category_names), ~ . == 1))
+}
+
+print("SUBCAT CHOICE FILTER")
+print(nrow(filtered_games))
+
+# reset index
+filtered_games <- filtered_games %>% arrange(desc(AvgRating))
+filtered_games <- filtered_games %>% mutate(Game_Number = row_number())
+
+# display games in a new window
+View(filtered_games %>% select(Name, Game_Number))
+#View(filtered_games %>% arrange(desc(AvgRating)) %>% select(Name, Game_Number))
+
+
+# user gives numbers of favorite games
+fav_numbers <- as.integer(strsplit(readline("Enter favorite game numbers separated by a space: "), " ")[[1]])
+fav_games <- filtered_games %>% filter(Game_Number %in% fav_numbers)
+print(fav_numbers)
+print(fav_games)
+# user gives numbers of least favorite games
+least_fav_numbers <- as.integer(strsplit(readline("Enter least favorite game numbers separated by a space: "), " ")[[1]])
+least_fav_games <- filtered_games %>% filter(Game_Number %in% least_fav_numbers)
+print(least_fav_numbers)
+print(least_fav_games)
+# append new ratings from input to ratings data
+new_ratings <- data.frame(
+  BGGId = c(fav_games$BGGId, least_fav_games$BGGId),
+  Rating = c(rep(10, nrow(fav_games)), rep(1, nrow(least_fav_games))),
+  Username = rep("TestUser", nrow(fav_games) + nrow(least_fav_games))
+)
+
+ratings <- bind_rows(ratings, new_ratings)
+
+# filter rating data 
+ratings <- ratings %>% filter(BGGId %in% filtered_games$BGGId)
+
+# Load the Matrix package
+library(Matrix)
+
+# Assume your dataframe 'ratings' has columns: BGGId, Rating, Username.
+# Create factor levels for users and items (BGGId)
+user_levels <- unique(ratings$Username)
+item_levels <- unique(ratings$BGGId)
+
+# Map Username and BGGId to numeric indices
+ratings$UserIndex <- match(ratings$Username, user_levels)
+ratings$ItemIndex <- match(ratings$BGGId, item_levels)
+
+# Build a sparse matrix: rows = users, columns = games (BGGId)
+# Missing ratings will be implicitly represented as 0.
+Rmat <- sparseMatrix(
+  i = ratings$UserIndex,
+  j = ratings$ItemIndex,
+  x = ratings$Rating,
+  dims = c(length(user_levels), length(item_levels))
+)
+rownames(Rmat) <- user_levels
+colnames(Rmat) <- item_levels
+
+# Extract TestUser's rating vector.
+test_ratings <- Rmat["TestUser", ]
+# Identify the games that TestUser has rated (nonzero) and those not rated (0)
+rated_items <- colnames(Rmat)[test_ratings != 0]
+candidate_items <- colnames(Rmat)[test_ratings == 0]
+
+# Define a cosine similarity function for sparse vectors.
+# It computes similarity using only the indices where both items have nonzero ratings.
+cosine_sim_sp <- function(vec1, vec2) {
+  # Get the indices of nonzero entries for each vector.
+  ind1 <- which(vec1 != 0)
+  ind2 <- which(vec2 != 0)
+  common <- intersect(ind1, ind2)
+  if (length(common) == 0) return(0)
+  # Compute dot product and norms only on common indices.
+  dot_prod <- sum(vec1[common] * vec2[common])
+  norm1 <- sqrt(sum(vec1[common]^2))
+  norm2 <- sqrt(sum(vec2[common]^2))
+  if (norm1 == 0 || norm2 == 0) return(0)
+  return(dot_prod / (norm1 * norm2))
+}
+
+# Compute predicted ratings for each candidate game.
+predictions <- sapply(candidate_items, function(item) {
+  # For each game TestUser has rated, compute the cosine similarity with the candidate item.
+  sims <- sapply(rated_items, function(r_item) {
+    cosine_sim_sp(Rmat[, item], Rmat[, r_item])
+  })
+  # If all similarities are zero, prediction is not possible.
+  if (sum(abs(sims)) == 0) return(NA)
+  # Weighted prediction using TestUser's rating for each rated game.
+  pred <- sum(sims * test_ratings[rated_items]) / sum(abs(sims))
+  return(pred)
+})
+
+# Remove any items with NA predicted ratings.
+predictions <- predictions[!is.na(predictions)]
+# Sort the predicted ratings in descending order.
+predictions <- sort(predictions, decreasing = TRUE)
+# Return the top 5 recommendations (or all if fewer than 5)
+top_n <- if (length(predictions) >= 5) head(predictions, 5) else predictions
+
+# Create a result dataframe with recommendations.
+result <- data.frame(BGGId = names(top_n), PredictedRating = top_n, row.names = NULL)
+print(result)

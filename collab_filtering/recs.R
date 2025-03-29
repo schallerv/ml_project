@@ -5,6 +5,8 @@
 library(dplyr)
 library(tidyr)
 library(readr)
+library(tibble)
+library(Matrix) 
 
 # read in data
 subcategories <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/subcategories.csv", show_col_types = FALSE)
@@ -12,6 +14,21 @@ games <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_
 ratings <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/user_ratings.csv", show_col_types = FALSE)
 
 ################# User interaction steps ################# 
+# remove all games with average rating below 4
+games <- games %>%
+  filter(AvgRating >= quantile(AvgRating, 0.30))
+
+print("RATING FILTER")
+print(nrow(games))
+
+# filter number of players
+num_players <- as.numeric(readline("Enter the number of players: "))  
+cat("Only showing games for ", num_players, "players\n")  
+games <- filter(games, MaxPlayers >= num_players)
+games <- filter(games, MinPlayers <= num_players)
+
+print("PLAYERS FILTER")
+print(nrow(games))
 
 # rename category columns
 colnames(games)[41:48] <- gsub("Cat:", "", colnames(games)[41:48])
@@ -21,6 +38,9 @@ games <- games %>% select(1, 2, 41:48)
 
 # join games and subcategory data
 full_games <- inner_join(games, subcategories, by = "BGGId")
+
+print("JOIN DATA")
+print(nrow(full_games))
 
 # categories list and count categories per game
 full_games <- full_games %>% 
@@ -35,7 +55,10 @@ full_games <- full_games %>%
 # filter games that are not in any category
 full_games <- filter(full_games, Num_Categories > 0)
 
-# extract unqiue categories and print
+print("CAT QUANT FILTER")
+print(nrow(full_games))
+
+# extract unique categories and print
 unique_categories <- sort(unique(unlist(strsplit(na.omit(full_games$Categories), ", "))))
 cat("Categories:\n")
 cat(paste0(seq_along(unique_categories), ". ", unique_categories), sep = "\n")
@@ -45,7 +68,10 @@ selected_categories <- as.integer(strsplit(readline("Select categories of intere
 category_names <- unique_categories[selected_categories]
 print("You Have Selected:")
 print(category_names)
-filtered_games <- full_games %>% filter_at(vars(all_of(category_names)), any_vars(. == 1))
+filtered_games <- full_games %>% filter(if_any(all_of(category_names), ~ . == 1))
+
+print("CAT CHOICE FILTER")
+print(nrow(filtered_games))
 
 # allow user to select subcategories of interest
 y_n <- readline("Would you like to select a subcategory? (Y/N) ")
@@ -57,15 +83,18 @@ if (tolower(y_n) == "y") {
   sub_category_names <- unique_sub_categories[selected_sub_categories]
   print("You Have Selected:")
   print(sub_category_names)
-  filtered_games <- filtered_games %>% filter_at(vars(sub_category_names), any_vars(. == 1))
+  filtered_games <- filtered_games %>% filter(if_any(all_of(sub_category_names), ~ . == 1))
 }
+
+print("SUBCAT CHOICE FILTER")
+print(nrow(filtered_games))
 
 # reset index
 filtered_games <- filtered_games %>% mutate(Game_Number = row_number())
 
 # display games in a new window
 #print(filtered_games %>% select(Game_Number, Name))
-View(filtered_games %>% select(Game_Number, Name))
+View(filtered_games %>% select(Game_Number, BGGId, Name))
 
 # user gives numbers of favorite games
 fav_numbers <- as.integer(strsplit(readline("Enter favorite game numbers separated by a space: "), " ")[[1]])
@@ -78,28 +107,22 @@ least_fav_games <- filtered_games %>% filter(Game_Number %in% least_fav_numbers)
 # append new ratings from input to ratings data
 new_ratings <- data.frame(
   BGGId = c(fav_games$BGGId, least_fav_games$BGGId),
-  Rating = c(rep(5, nrow(fav_games)), rep(1, nrow(least_fav_games))),
+  Rating = c(rep(10, nrow(fav_games)), rep(1, nrow(least_fav_games))),
   Username = rep("TestUser", nrow(fav_games) + nrow(least_fav_games))
 )
 
 ratings <- bind_rows(ratings, new_ratings)
 
-# filter rating data if requested by user
-y_n <- readline("Would you like recommendations for only the selected categories? (Y/N) ")
-if (tolower(y_n) == "y") {
-  ratings <- ratings %>% filter(BGGId %in% filtered_games$BGGId)
-}
+# filter rating data
+ratings <- ratings %>% filter(BGGId %in% filtered_games$BGGId)
 
 ################# Start collab filtering ################# 
+# Assuming your ratings dataframe has columns: Username, BGGId, Rating
+ratings_matrix <- ratings %>%
+  select(Username, BGGId, Rating) %>%
+  spread(key = BGGId, value = Rating, fill = NA) %>%
+  column_to_rownames("Username") %>%
+  as.matrix()
 
-# create ratings matrix
-rating_matrix <- ratings %>% 
-  pivot_wider(names_from = BGGId, values_from = Rating, values_fn = list(Rating = mean))
-
-# center ratings on item
-
-
-# create similarity matrix
-
-
-# 
+# Convert the matrix to a sparse matrix
+ratings_sparse <- as(ratings_matrix, "CsparseMatrix")
