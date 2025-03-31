@@ -1,14 +1,15 @@
 # DS4420 Final Project
 # Victoria Schaller
 
-# import libraries
+################# imports ################# 
+# libraries
 library(dplyr)
 library(tidyr)
 library(readr)
 library(tibble)
 library(Matrix) 
 
-# read in data
+# data
 subcategories <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/subcategories.csv", show_col_types = FALSE)
 games <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/games.csv", show_col_types = FALSE)
 ratings <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/user_ratings.csv", show_col_types = FALSE)
@@ -17,9 +18,6 @@ ratings <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/gam
 # remove all games with average rating below 4
 games <- games %>%
   filter(AvgRating >= quantile(AvgRating, 0.30))
-
-print("RATING FILTER")
-print(nrow(games))
 
 # filter number of players
 repeat {
@@ -35,11 +33,9 @@ repeat {
 }
 
 cat("You entered:", num_players, "\n")
+
 games <- filter(games, MaxPlayers >= num_players)
 games <- filter(games, MinPlayers <= num_players)
-
-print("PLAYERS FILTER")
-print(nrow(games))
 
 # rename category columns
 colnames(games)[41:48] <- gsub("Cat:", "", colnames(games)[41:48])
@@ -49,9 +45,6 @@ games <- games %>% select(1, 2, 6, 41:48)
 
 # join games and subcategory data
 full_games <- inner_join(games, subcategories, by = "BGGId")
-
-print("JOIN DATA")
-print(nrow(full_games))
 
 # categories list and count categories per game
 full_games <- full_games %>% 
@@ -65,9 +58,6 @@ full_games <- full_games %>%
 
 # filter games that are not in any category
 full_games <- filter(full_games, Num_Categories > 0)
-
-print("CAT QUANT FILTER")
-print(nrow(full_games))
 
 # extract unique categories and print
 unique_categories <- sort(unique(unlist(strsplit(na.omit(full_games$Categories), ", "))))
@@ -93,9 +83,6 @@ category_names <- unique_categories[valid_categories]
 print("You Have Selected:")
 print(category_names)
 filtered_games <- full_games %>% filter(if_any(all_of(category_names), ~ . == 1))
-
-print("CAT CHOICE FILTER")
-print(nrow(filtered_games))
 
 # allow user to select subcategories of interest
 y_n <- readline("Would you like to select a subcategory? (Y/N) ")
@@ -159,20 +146,16 @@ ratings <- bind_rows(ratings, new_ratings)
 # filter rating data 
 ratings <- ratings %>% filter(BGGId %in% filtered_games$BGGId)
 
-# Load the Matrix package
-library(Matrix)
-
-# Assume your dataframe 'ratings' has columns: BGGId, Rating, Username.
-# Create factor levels for users and items (BGGId)
+################# filtering ################# 
+# factor levels for users and items
 user_levels <- unique(ratings$Username)
 item_levels <- unique(ratings$BGGId)
 
-# Map Username and BGGId to numeric indices
+# Map to numeric index
 ratings$UserIndex <- match(ratings$Username, user_levels)
 ratings$ItemIndex <- match(ratings$BGGId, item_levels)
 
-# Build a sparse matrix: rows = users, columns = games (BGGId)
-# Missing ratings will be implicitly represented as 0.
+# build sparse matrix: rows = users, columns = items
 Rmat <- sparseMatrix(
   i = ratings$UserIndex,
   j = ratings$ItemIndex,
@@ -182,21 +165,20 @@ Rmat <- sparseMatrix(
 rownames(Rmat) <- user_levels
 colnames(Rmat) <- item_levels
 
-# Extract TestUser's rating vector.
+# get TestUser's ratings
 test_ratings <- Rmat["TestUser", ]
-# Identify the games that TestUser has rated (nonzero) and those not rated (0)
 rated_items <- colnames(Rmat)[test_ratings != 0]
+print(test_ratings)
 candidate_items <- colnames(Rmat)[test_ratings == 0]
 
-# Define a cosine similarity function for sparse vectors.
-# It computes similarity using only the indices where both items have nonzero ratings.
+# cosine similarity function for sparse vectors
 cosine_sim_sp <- function(vec1, vec2) {
-  # Get the indices of nonzero entries for each vector.
+  # indices of nonzero entries 
   ind1 <- which(vec1 != 0)
   ind2 <- which(vec2 != 0)
   common <- intersect(ind1, ind2)
   if (length(common) == 0) return(0)
-  # Compute dot product and norms only on common indices.
+  # Compute dot product and norms
   dot_prod <- sum(vec1[common] * vec2[common])
   norm1 <- sqrt(sum(vec1[common]^2))
   norm2 <- sqrt(sum(vec2[common]^2))
@@ -204,26 +186,41 @@ cosine_sim_sp <- function(vec1, vec2) {
   return(dot_prod / (norm1 * norm2))
 }
 
-# Compute predicted ratings for each candidate game.
+# predicted ratings for each game
 predictions <- sapply(candidate_items, function(item) {
-  # For each game TestUser has rated, compute the cosine similarity with the candidate item.
+  # For each game TestUser rated, cosine similarity with candidate item
   sims <- sapply(rated_items, function(r_item) {
     cosine_sim_sp(Rmat[, item], Rmat[, r_item])
   })
-  # If all similarities are zero, prediction is not possible.
+  # if all similarities are zero, null
   if (sum(abs(sims)) == 0) return(NA)
-  # Weighted prediction using TestUser's rating for each rated game.
+  # prediction using TestUser's ratings
   pred <- sum(sims * test_ratings[rated_items]) / sum(abs(sims))
   return(pred)
 })
 
-# Remove any items with NA predicted ratings.
+# remove items with NA ratings
 predictions <- predictions[!is.na(predictions)]
-# Sort the predicted ratings in descending order.
+# sort ratings in descending order
 predictions <- sort(predictions, decreasing = TRUE)
-# Return the top 5 recommendations (or all if fewer than 5)
+# top 5 recommendations (or all if fewer than 5)
 top_n <- if (length(predictions) >= 5) head(predictions, 5) else predictions
 
-# Create a result dataframe with recommendations.
+################# recommendations ################# 
+# result dataframe
 result <- data.frame(BGGId = names(top_n), PredictedRating = top_n, row.names = NULL)
 print(result)
+
+# mutate
+result <- result %>% mutate(BGGId = as.character(BGGId))
+games <- games %>% mutate(BGGId = as.character(BGGId))
+
+# Join result with games to get the Name column
+result_with_names <- result %>%
+  left_join(games, by = "BGGId")
+
+print("Your Recommended Games:")
+# Print each row with its associated Name
+for (i in 1:nrow(result_with_names)) {
+  print(result_with_names$Name[i])
+}
