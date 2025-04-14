@@ -276,16 +276,8 @@ split_results <- ratings_filtered %>%
 ratings_train <- map_dfr(split_results, ~ .x$train)
 ratings_test <- map_dfr(split_results, ~ .x$test)
 
-# Print column names for debugging
-#cat("Columns in ratings_train:", paste(names(ratings_train), collapse = ", "), "\n")
-
-# Ensure we have the correct columns and data types
-#if (!all(c("Username", "BGGId", "Rating") %in% names(ratings_train))) {
- # stop("Required columns are missing from the data")
-#}
-
 # make user and item index mappings for matrix construction
-ratigs_train <- ratings_train %>%
+ratings_train <- ratings_train %>%
   transmute(
     Username = as.character(Username),
     BGGId = as.character(BGGId),
@@ -300,7 +292,6 @@ ratings_test <- ratings_test %>%
     Rating = as.numeric(Rating)
   ) %>%
   filter(!is.na(Username), !is.na(BGGId), !is.na(Rating))
-
 
 # get indexs for matrix
 train_user_levels <- unique(ratings_train$Username)
