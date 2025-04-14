@@ -10,9 +10,9 @@ library(tibble)
 library(Matrix) 
 library(ggplot2)
 library(purrr)
-setwd("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project")
 
-# data
+# TODO - replace these with your data locations
+setwd("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project")
 subcategories <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/subcategories.csv", show_col_types = FALSE)
 games <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/games.csv", show_col_types = FALSE)
 ratings <- read_csv("C:/Users/toris/Downloads/Spring 25/DS4420/Final Project/game_data/user_ratings.csv", show_col_types = FALSE)
