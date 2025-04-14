@@ -44,7 +44,6 @@ def game_info_page():
     # Retrieve GameAPI instance from session state, or create one if needed.
     api = st.session_state.get("api")
     if not api:
-        from api import GameAPI
         api = GameAPI()
         st.session_state["api"] = api
 

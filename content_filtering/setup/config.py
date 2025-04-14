@@ -24,11 +24,11 @@ TRAINING_PARAMS = {
 }
 
 # adjust these paths based on where bgg_data folder is located. These assume it's outside the repo
-GAMES_CSV_PATH = "../../bgg_data/overall_games_starter.csv"
-GAME_EMBEDDINGS_CSV_PATH = "../../bgg_data/game_embeddings.csv"
-GAMES_SIMILARITIES_CSV_PATH = "../../bgg_data/game_similarities.csv"
-RATINGS_CSV_PATH = "../../bgg_data/ratings_starter.csv"
-GAME_DESCRIPTIONS_CSV_PATH = "../../bgg_data/game_descriptions.csv"
-GAME_COLUMNS_JSON_PATH = "../../bgg_data/columns.json"
+GAMES_CSV_PATH = "bgg_data/overall_games_starter.csv"
+GAME_EMBEDDINGS_CSV_PATH = "bgg_data/game_embeddings.csv"
+GAMES_SIMILARITIES_CSV_PATH = "bgg_data/game_similarities.csv"
+RATINGS_CSV_PATH = "bgg_data/ratings_starter.csv"
+GAME_DESCRIPTIONS_CSV_PATH = "bgg_data/game_descriptions.csv"
+GAME_COLUMNS_JSON_PATH = "bgg_data/columns.json"
 
 AUTOENCODER_PATH = "denoising_autoencoder.pth"
