@@ -22,4 +22,4 @@ Download all csvs and combine them into a folder. Make sure to change data locat
 
 ### Running the App
 In terminal, navigate to the content_filtering folder. Then run ```streamlit run app.py ```
-You can login using an existing user, or you can make a new user. If you make a new user, you will need to dd some game ratings before the recommendations will become meaningful. For users who have not rated any games, initial recommendations are just the most popular games.
+You can login using an existing user, or you can make a new user. If you make a new user, you will need to add some game ratings before the recommendations become meaningful. For users who have not rated any games, initial recommendations are just the most popular games.
