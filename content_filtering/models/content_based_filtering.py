@@ -105,20 +105,28 @@ def get_recommendations_for_user(username, top_n=5, k=10):
     sim_df = load_similarity_matrix()
     username = username.strip().lower()
 
-    # Exclude games already rated by the user
-    rated_games = set(ratings_df[ratings_df['Username'] == username]['BGGId'])
+    # Check if the user has any ratings.
+    user_ratings = ratings_df[ratings_df['Username'] == username]
+    if user_ratings.empty:
+        # For users with no ratings, return the most popular games based on NumUserRatings.
+        popular_games = games_df.sort_values(by="NumUserRatings", ascending=False).head(top_n)
+        return popular_games[['BGGId', 'Name']].to_dict(orient='records')
+
+    # Exclude games already rated by the user.
+    rated_games = set(user_ratings['BGGId'])
     candidates = games_df[~games_df['BGGId'].isin(rated_games)]
     if candidates.empty:
         return []
 
     candidate_df = candidates[['BGGId']].copy()
     candidate_df['Username'] = username
-    candidate_df['Rating'] = np.nan  # Dummy value for compatibility and avoiding angry looking error messages
+    candidate_df['Rating'] = np.nan  # Dummy value for compatibility.
     predicted_candidates = predict_ratings(candidate_df, ratings_df, sim_df, k=k)
     predicted_candidates = predicted_candidates.dropna(subset=["Predicted"])
     if predicted_candidates.empty:
         return []
     top_candidates = predicted_candidates.sort_values("Predicted", ascending=False).head(top_n)
-    # Merge with games_df to retrieve game names
+    # Merge with games_df to retrieve game names.
     recommended = top_candidates.merge(games_df[['BGGId', 'Name']], on='BGGId', how='left')
     return recommended.to_dict(orient='records')
+
