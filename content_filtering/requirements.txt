@@ -1,5 +1,4 @@
---extra-index-url
-https://download.pytorch.org/whl/cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 altair==5.5.0
 matplotlib==3.7.5
