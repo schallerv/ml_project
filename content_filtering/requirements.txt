@@ -1,15 +1,15 @@
 altair==5.4.1
-attrs==25.3.0
+attrs
 blinker==1.8.2
 cachetools==5.5.2
-certifi==2025.1.31
+certifi==
 charset-normalizer==3.4.1
 click==8.1.8
 contourpy==1.1.1
 cycler==0.12.1
 filelock==3.16.1
 fonttools==4.57.0
-fsspec==2025.3.0
+fsspec
 gitdb==4.0.12
 GitPython==3.1.44
 idna==3.10
@@ -37,7 +37,7 @@ pydeck==0.9.1
 Pygments==2.19.1
 pyparsing==3.1.4
 python-dateutil==2.9.0.post0
-pytz==2025.2
+pytz
 referencing==0.35.1
 requests==2.32.3
 rich==13.9.4
@@ -56,7 +56,7 @@ torchaudio==2.2.2
 torchvision==0.17.2
 tornado==6.4.2
 typing_extensions==4.13.2
-tzdata==2025.2
+tzdata
 urllib3==2.2.3
 watchdog==4.0.2
 zipp==3.20.2
