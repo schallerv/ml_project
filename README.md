@@ -17,7 +17,7 @@ Download all csvs and combine them into a folder. Make sure to change data locat
    If you're using Conda, create an environment and install dependencies manually (see `requirements.txt` for pip users).
 
 3. **Adjust File Paths.**
-   Many scripts assume the BGG data is located in a folder named `bgg_data` located in the same directory as where the repo is located (not in the repo). You'll need to adjust the filepaths in the code to account for where you put bgg_data. See content_filtering/setup/config.py to adjust them for content filtering. 
+   If you move the bgg_data folder from the content_filtering folder or use the zipped version, you'll need to adjust the filepaths in the code to account for where you put bgg_data. See content_filtering/setup/config.py to adjust them for content filtering. 
    
 
 ### Running the App
