@@ -14,9 +14,10 @@ Download all csvs and combine them into a folder. Make sure to change data locat
 1. **Clone the repository and navigate into the project directory.**
 
 2. **Ensure your environment is set up.**
-   1. If you're using Conda, run ```conda create --name myenv python=3.8.8```. Be sure to use python 3.8.8 to avoid dependancy issues.
-   2. In terminal, navigate to content_filtering
-   3. Run ```pip install -r requirements.txt ```
+   1. If you're using Conda, run ```conda create --name envr-name python=3.8.8```. Be sure to use python 3.8.8 to avoid dependancy issues.
+   2. Run ```conda activate envr-name``` to activate the new environment.
+   3. In terminal, navigate to content_filtering
+   4. Run ```pip install -r requirements.txt ```
 
 3. **Adjust File Paths.**
    If you move the bgg_data folder from the content_filtering folder or use the zipped version, you'll need to adjust the filepaths in the code to account for where you put bgg_data. See content_filtering/setup/config.py to adjust them for content filtering. 
